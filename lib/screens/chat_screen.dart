@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flash_chat/components/message_stream.dart';
 import 'package:flutter/material.dart';
 import 'package:flash_chat/constants.dart';
 
@@ -16,6 +17,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final _auth = FirebaseAuth.instance;
   User loggedInUser;
   String messageText;
+  final messageController = TextEditingController();
 
   void getCurrentUser() {
     try {
@@ -54,29 +56,8 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            Expanded(
-              child: StreamBuilder(
-                stream: _fireStore.snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Text('Loading !');
-                  }
-                  var messages = snapshot.requireData;
-                  return ListView.builder(
-                    padding: EdgeInsets.all(10.0),
-                    itemCount: messages.size,
-                    itemBuilder: (context, index) {
-                      return Text(
-                        '${messages.docs[index]['sender']} write ${messages.docs[index]['text']}',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 20.0,
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
+            MessageStream(
+              _fireStore,
             ),
             Container(
               decoration: kMessageContainerDecoration,
@@ -89,11 +70,13 @@ class _ChatScreenState extends State<ChatScreen> {
                       onChanged: (value) {
                         messageText = value;
                       },
+                      controller: messageController,
                       decoration: kMessageTextFieldDecoration,
                     ),
                   ),
                   TextButton(
                     onPressed: () {
+                      messageController.clear();
                       _fireStore.add(
                           {'sender': loggedInUser.email, 'text': messageText});
                     },
